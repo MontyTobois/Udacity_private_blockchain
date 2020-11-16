@@ -64,7 +64,12 @@ class Blockchain {
     _addBlock(block) {
         let self = this;
         return new Promise(async (resolve, reject) => {
-           
+           try{
+               let newBlock = block;
+               let chainHeight = await self.getChainHeight();
+               newBlock.height = chainHeight ++;
+               newBlock.time = new Date().getTime().toString().slice(0,-3);
+             }
         });
     }
 
@@ -78,7 +83,7 @@ class Blockchain {
      */
     requestMessageOwnershipVerification(address) {
         return new Promise((resolve) => {
-            
+            let elecMessage  = "";
         });
     }
 
@@ -160,7 +165,7 @@ class Blockchain {
         let self = this;
         let errorLog = [];
         return new Promise(async (resolve, reject) => {
-            
+            try 
         });
     }
 
