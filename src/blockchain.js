@@ -65,11 +65,24 @@ class Blockchain {
         let self = this;
         return new Promise(async (resolve, reject) => {
            try{
+               // Declare new variable for the block
                let newBlock = block;
-               let chainHeight = await self.getChainHeight();
-               newBlock.height = chainHeight ++;
+               // Delcare height of new block to the chain length
+               newBlock.height = self.chain.length;
+               // Adds timestamp to the block
                newBlock.time = new Date().getTime().toString().slice(0,-3);
-             }
+             
+                // First Block
+                if(self.chain >= 0){
+                newBlock.previousBlockHash = this.chain[this.chain.length-1].hash;
+                }
+                // SHA256 algorithm to create a new hash for block 
+                newBlock.hash = SHA256(JSON.stringify(newBlock)).toString();
+                // Push on to the Blockchain
+                self.chain.push(newBlock);
+            
+                resolve(newBlock);
+            }
         });
     }
 
@@ -83,7 +96,7 @@ class Blockchain {
      */
     requestMessageOwnershipVerification(address) {
         return new Promise((resolve) => {
-            let elecMessage  = "";
+            resolve (`${address}:${new Date().getTime().toString().slice(0,-3)}:starRegistry`)
         });
     }
 
@@ -120,7 +133,12 @@ class Blockchain {
     getBlockByHash(hash) {
         let self = this;
         return new Promise((resolve, reject) => {
-           
+           try {
+               const targetBlock = self.chain.filter => block.hash === hash)[0];
+                resolve(targetBlock);
+           } catch (error) {
+               reject(error);
+           }
         });
     }
 
@@ -165,7 +183,27 @@ class Blockchain {
         let self = this;
         let errorLog = [];
         return new Promise(async (resolve, reject) => {
-            try 
+            try {
+                // Goes thur each block on Chain checking the length
+               self.chain.forEach(async (block, height)=>{
+                let recentBlockHash = null;
+                // Setting to the previous block hash
+                if (height > 0) {
+                    recentBlockHash = self.chain[i-1].previousBlockHash;
+                }
+                // Compare the recent block hash to the current hash
+                if (block.previousBlockHash != recentBlockHash) {
+                    errorLog.push(`Incorrect Block Hash`);
+                }
+                // Awaits the block to check it's hash 
+                await block.validate().then(isValid) => {
+                    if (isValid == false){
+                        errorLog.push(`Incorrect Block`);
+                    }
+                }
+               });
+            }
+            }
         });
     }
 
