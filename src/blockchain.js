@@ -9,7 +9,7 @@
  */
 
 const SHA256 = require('crypto-js/sha256');
-const BlockClass = require('./block.js');
+const Block= require('./block.js');
 const bitcoinMessage = require('bitcoinjs-message');
 
 class Blockchain {
@@ -35,7 +35,7 @@ class Blockchain {
      */
     async initializeChain() {
         if( this.height === -1){
-            let block = new BlockClass.Block({data: 'Genesis Block'});
+            let block = new Block.Block('Genesis Block');
             await this._addBlock(block);
         }
     }
@@ -64,7 +64,7 @@ class Blockchain {
     _addBlock(block) {
         let self = this;
         return new Promise(async (resolve, reject) => {
-           try{
+           
                // Declare new variable for the block
                let newBlock = block;
                // Delcare height of new block to the chain length
@@ -73,8 +73,8 @@ class Blockchain {
                newBlock.time = new Date().getTime().toString().slice(0,-3);
              
                 // First Block
-                if(self.chain >= 0){
-                newBlock.previousBlockHash = this.chain[this.chain.length-1].hash;
+                if(self.chain.length > 0){
+                newBlock.previousBlockHash = self.chain[this.chain.length -1].hash;
                 }
                 // SHA256 algorithm to create a new hash for block 
                 newBlock.hash = SHA256(JSON.stringify(newBlock)).toString();
@@ -82,7 +82,7 @@ class Blockchain {
                 self.chain.push(newBlock);
             
                 resolve(newBlock);
-            }
+        
         });
     }
 
@@ -120,7 +120,22 @@ class Blockchain {
     submitStar(address, message, signature, star) {
         let self = this;
         return new Promise(async (resolve, reject) => {
-            
+            let msgTimeStamp = parseInt(message.split(':')[1]);
+            let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));
+        
+            // Compares time to see if 5 minutes have elasped
+            if (currentTime - msgTimeStamp > 300) {
+                reject(`Longer than 5 Minutes...`);
+            }
+
+            // BitcoinMessage checking for verification
+            if (bitcoinMessage.verify(message, address, signature) == false){
+                reject(`Verification Failed...`);
+            }
+            // Creates the new Block object to hold address and star info
+            let newBlock = new BlockStruct.Block({owner: address, star: star});
+            await self._addBlock(newBlock);
+            resolve(newBlock);
         });
     }
 
@@ -134,7 +149,7 @@ class Blockchain {
         let self = this;
         return new Promise((resolve, reject) => {
            try {
-               const targetBlock = self.chain.filter => block.hash === hash)[0];
+               const targetBlock = self.chain.filter(block => block.hash === hash)[0];
                 resolve(targetBlock);
            } catch (error) {
                reject(error);
@@ -169,7 +184,13 @@ class Blockchain {
         let self = this;
         let stars = [];
         return new Promise((resolve, reject) => {
-            
+            try {
+                let stars = self.chain.filter(block => block.getBData().owner === address)
+                let starsInfo = stars.map(stars => star.getBData())
+                resolve(stars);
+            } catch (error) {
+                reject(error)
+            }
         });
     }
 
@@ -183,7 +204,7 @@ class Blockchain {
         let self = this;
         let errorLog = [];
         return new Promise(async (resolve, reject) => {
-            try {
+            
                 // Goes thur each block on Chain checking the length
                self.chain.forEach(async (block, height)=>{
                 let recentBlockHash = null;
@@ -195,18 +216,16 @@ class Blockchain {
                 if (block.previousBlockHash != recentBlockHash) {
                     errorLog.push(`Incorrect Block Hash`);
                 }
-                // Awaits the block to check it's hash 
-                await block.validate().then(isValid) => {
+                // Awaits the block to check the hash 
+                await block.validate().then((isValid) =>{
                     if (isValid == false){
                         errorLog.push(`Incorrect Block`);
                     }
-                }
+                });
                });
-            }
-            }
+               resolve(errorLog);
         });
     }
-
 }
 
 module.exports.Blockchain = Blockchain;   
