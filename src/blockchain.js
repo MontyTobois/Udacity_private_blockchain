@@ -80,15 +80,15 @@ class Blockchain {
            
                // Declare new variable for the block
                let newBlock = block;
-               let chainHeight = await self.getChainHeight();
                // Delcare height of new block to the chain length
+               let chainHeight = await self.getChainHeight();
                newBlock.height = chainHeight + 1;
                // Adds timestamp to the block
-               newBlock.timestamp = new Date().getTime().toString().slice(0,-3);
+               newBlock.time = new Date().getTime().toString().slice(0,-3);
              
                 // First Block
-                if(self.chain.length >= 0){
-                    let previousBlockHash = await self.getLastBlock();
+                if(self.chain.length > 0){
+                    let previousBlockHash = await self.getLastBlock().hash;
                     newBlock.previousBlockHash = previousBlockHash.hash;
                 }
                 // SHA256 algorithm to create a new hash for block 
@@ -111,7 +111,8 @@ class Blockchain {
      */
     requestMessageOwnershipVerification(address) {
         return new Promise((resolve) => {
-            resolve (`${address}:${new Date().getTime().toString().slice(0,-3)}:starRegistry`)
+            let text = address + ":" + new Date().getTime().toString().slice(0,-3) + "starRegistry";
+            resolve(text);
         });
     }
 
@@ -144,11 +145,11 @@ class Blockchain {
             }
 
             // BitcoinMessage checking for verification
-            if (bitcoinMessage.verify(message, address, signature) !== true){
+            if (bitcoinMessage.verify(message, address, signature) == false){
                 reject(`Verification Failed...`);
             }
             // Creates the new Block object to hold address and star info
-            let newBlock = new BlockStruct.Block({owner: address, star: star});
+            let newBlock = new Block.Block({owner: address, star: star});
             await self._addBlock(newBlock);
             resolve(newBlock);
         });
