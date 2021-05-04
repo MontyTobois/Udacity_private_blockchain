@@ -35,8 +35,9 @@ class Blockchain {
      */
     async initializeChain() {
         if( this.height === -1){
+            let self = this;
             let block = new Block.Block('Genesis Block');
-            await this._addBlock(block);
+            await self._addBlock(block);
         }
     }
 
@@ -44,10 +45,22 @@ class Blockchain {
      * Utility method that return a Promise that will resolve with the height of the chain
      */
     getChainHeight() {
+        let self = this;
         return new Promise((resolve, reject) => {
-            resolve(this.height);
+            resolve(self.height);
         });
     }
+
+    /**
+     * Utility method that return a Promise that will resolve with the height of the chain
+     */
+     getLastBlock() {
+        let self = this;
+        return new Promise((resolve, reject) => {
+            resolve(self.height);
+        });
+    }
+
 
     /**
      * _addBlock(block) will store a block in the chain
@@ -67,14 +80,16 @@ class Blockchain {
            
                // Declare new variable for the block
                let newBlock = block;
+               let chainHeight = await self.getChainHeight();
                // Delcare height of new block to the chain length
-               newBlock.height = self.chain.length;
+               newBlock.height = chainHeight + 1;
                // Adds timestamp to the block
-               newBlock.time = new Date().getTime().toString().slice(0,-3);
+               newBlock.timestamp = new Date().getTime().toString().slice(0,-3);
              
                 // First Block
-                if(self.chain.length > 0){
-                newBlock.previousBlockHash = self.chain[this.chain.length -1].hash;
+                if(self.chain.length >= 0){
+                    let previousBlockHash = await self.getLastBlock();
+                    newBlock.previousBlockHash = previousBlockHash.hash;
                 }
                 // SHA256 algorithm to create a new hash for block 
                 newBlock.hash = SHA256(JSON.stringify(newBlock)).toString();
@@ -129,7 +144,7 @@ class Blockchain {
             }
 
             // BitcoinMessage checking for verification
-            if (bitcoinMessage.verify(message, address, signature) == false){
+            if (bitcoinMessage.verify(message, address, signature) !== true){
                 reject(`Verification Failed...`);
             }
             // Creates the new Block object to hold address and star info
@@ -182,12 +197,12 @@ class Blockchain {
      */
     getStarsByWalletAddress (address) {
         let self = this;
-        let stars = [];
+        let star = [];
         return new Promise((resolve, reject) => {
             try {
                 let stars = self.chain.filter(block => block.getBData().owner === address)
                 let starsInfo = stars.map(stars => star.getBData())
-                resolve(stars);
+                resolve(starsInfo);
             } catch (error) {
                 reject(error)
             }
@@ -205,7 +220,7 @@ class Blockchain {
         let errorLog = [];
         return new Promise(async (resolve, reject) => {
             
-                // Goes thur each block on Chain checking the length
+                // Goes through each block on Chain checking the length
                self.chain.forEach(async (block, height)=>{
                 let recentBlockHash = null;
                 // Setting to the previous block hash
