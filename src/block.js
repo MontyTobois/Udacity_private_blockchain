@@ -9,7 +9,7 @@
  *  run asynchronous.
  */
 
-const { json } = require('body-parser');
+
 const SHA256 = require('crypto-js/sha256');
 const hex2ascii = require('hex2ascii');
 
@@ -43,16 +43,16 @@ class Block {
             // Save in auxiliary variable the current block hash
             self.hash = "";
             // Recalculate the hash of the Block
-            let recalculatedHash = SHA256(json.stringify(self)).toString;
+            let recalculatedHash = SHA256(JSON.stringify(self)).toString();
              self.hash = auxVar;
             // Comparing if the hashes changed
-            if (recalculatedHash !== auxVar) {
+            if (recalculatedHash === auxVar) {
             // Returning the Block is not valid
-            resolve(false);
+            resolve(true);
           
             // Returning the Block is valid
               }else {
-            resolve(true);
+            reject(false);
             }
         });
     }
@@ -67,18 +67,24 @@ class Block {
      *     or Reject with an error.
      */
     getBData() {
+        let self = this;
         // Getting the encoded data saved in the Block
-        if (this.height === 0) {
-            return 0;
+        return new Promise((resolve, reject) => {
+            if (self.height == 0) {
+                reject('Empty Genesis Block')
+            }
+            let decodeData = JSON.parse(hex2ascii(self.body));
+            resolve(decodeData);
+        })
          // Decoding the data to retrieve the JSON representation of the object
-        } else {
-            let encData = this.body;
+        
+         
         // Parse the data to an object to be retrieve.
-            let decdData = JSON.parse(hex2ascii(encData));
+            
         // Resolve with the data if the object isn't the Genesis block
-            return decdData;
+          
         }   
     }
-}
+
 
 module.exports.Block = Block;                    // Exposing the Block class as a module

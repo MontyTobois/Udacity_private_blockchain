@@ -5,7 +5,7 @@
  * This class expose the endpoints that the client applications will use to interact with the 
  * Blockchain dataset
  */
-class BlockchainController {
+ class BlockchainController {
 
     //The constructor receive the instance of the express.js app and the Blockchain class
     constructor(app, blockchainObj) {
@@ -56,7 +56,7 @@ class BlockchainController {
 
     // Endpoint that allow Submit a Star, yu need first to `requestOwnership` to have the message (POST endpoint)
     submitStar() {
-        this.app.post("/submitstar", async (req, res) => {
+        this.app.post("/submitStar", async (req, res) => {
             if(req.body.address && req.body.message && req.body.signature && req.body.star) {
                 const address = req.body.address;
                 const message = req.body.message;
@@ -65,7 +65,7 @@ class BlockchainController {
                 try {
                     let block = await this.blockchain.submitStar(address, message, signature, star);
                     if(block){
-                        return res.status(200).json(block);
+                        return res.status(200).JSON(block);
                     } else {
                         return res.status(500).send("An error happened!");
                     }
@@ -80,7 +80,7 @@ class BlockchainController {
 
     // This endpoint allows you to retrieve the block by hash (GET endpoint)
     getBlockByHash() {
-        this.app.get("/block/:hash", async (req, res) => {
+        this.app.get("/block/hash/:hash", async (req, res) => {
             if(req.params.hash) {
                 const hash = req.params.hash;
                 let block = await this.blockchain.getBlockByHash(hash);
@@ -115,6 +115,24 @@ class BlockchainController {
                 return res.status(500).send("Block Not Found! Review the Parameters!");
             }
             
+        });
+    }
+    
+    validateChain() {
+        let self = this;
+        let errorLog = [];
+        return new Promise(async (resolve, reject) => {
+            let blockChain=self.chain;
+            for (const block in blockChain) {
+                console.log(blockChain)
+                if(block.validate===false){
+                    console.log("Data didn't get validated");
+                }else if(block.previousBlockHash =this.chain[this.chain.length-1].hash){
+                    console.log("error with previous blockhash");
+                    errorLog.push(`Invalid check previousBlockHash: ${this.chain[this.chain.length-1] }`)
+                    console.log(errorLog)
+                }
+              }
         });
     }
 
