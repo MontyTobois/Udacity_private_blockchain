@@ -48,16 +48,18 @@ class Blockchain {
         let self = this;
         return new Promise((resolve, reject) => {
             resolve(self.height);
+            reject('error');
         });
     }
 
     /**
-     * Utility method that return a Promise that will resolve with the height of the chain
+     * Utility method that return a Promise that will resolve with the last Block of the chain
      */
      getLastBlock() {
         let self = this;
         return new Promise((resolve, reject) => {
             resolve(self.height);
+            reject('error');
         });
     }
 
@@ -76,19 +78,30 @@ class Blockchain {
      */
      _addBlock(block) {
         let self = this;
-        
         return new Promise(async (resolve, reject) => {
-            let newBlock = block;
-            newBlock.height = self.chain.length;
-            newBlock.time = new Date().getTime().toString().slice(0, -3);
+            console.log(`[_addBlock] This is the block to add`);
+            // set block height
+            block.height = self.height + 1;
+            // block timestamp
+            block.time = new Date().getTime().toString().slice(0,-3);
+            // set block's previous block hash if not genesis block
             if (self.chain.length > 0) {
-                newBlock.previousBlockHash = self.chain[self.chain.length-1].hash;
+               block.previousBlockHash = self.chain[self.chain.length-1].hash;
             }
-            newBlock.hash = SHA256(JSON.stringify(newBlock)).toString();
-            self.chain.push(newBlock)
-            // self.height++;
-            resolve(newBlock)
-            reject('ERR: Couldn\'t add block')
+            // hash the block and assign to block's hash
+            block.hash = SHA256(JSON.stringify(block)).toString();
+            // validateChain
+            let errors = await self.validateChain();
+            if (errors.length === 0) {
+                self.chain.push(block);
+                self.height++;
+                // resolve promise 
+                resolve(block);
+                console.log(this.chain)
+            } else {
+                reject(errors);
+                console.log(`[_addBlock] Promise rejected: ${errors}`);
+            }
         });
     }
 
@@ -130,10 +143,13 @@ class Blockchain {
             let msgtime = parseInt(message.split(':')[1]);
             let currentTime = parseInt(new Date().getTime().toString().slice(0,-3));
 
-            if (msgtime > currentTime - 3000) {
-                if(!bitcoinMessage.verify(message, address, signature)) {
-                    let newBlock = new Block.Block({"owner": address, "star": star});
-                    await self._addBlock(newBlock);
+            if ((msgtime - currentTime)<(5*60)) {
+                let verified =  bitcoinMessage.verify(message, address, signature);
+                if(verified) {
+                    const newData = { owner: address, star: star     } 
+
+                    const newBlock = new Block.Block(newData);
+                    await self._addBlock(newBlock)
                     resolve(newBlock);
                 } else {
                     reject(Error("Block message not verified."))
@@ -174,7 +190,7 @@ class Blockchain {
             if(block){
                 resolve(block);
             } else {
-                resolve(null);
+                reject(null);
             }
         });
     }
@@ -191,39 +207,40 @@ class Blockchain {
         return new Promise((resolve, reject) => {
             self.chain.forEach(async(b) => {
                 const starData  = await b.getBData();
-                if (starData) {
-                    if (starData.owner === address) {
-                        stars.push(starData)
-                    }
+                // Checks to see if the star matches wallet user
+                if (starData && starData.owner === address) {
+                    stars.push(starData)
                 }
             });
             resolve(stars);
+            reject('error ');
         });
     }
 
     /**
      * This method will return a Promise that will resolve with the list of errors when validating the chain.
      * Steps to validate:
-     * 1. You should validate each block using `validateBlock`
+     * 1. You should validate each block using `validate`
      * 2. Each Block should check the with the previousBlockHash
      */
      validateChain() {
         let self = this;
         let errorLog = [];
         return new Promise(async (resolve, reject) => {
-           
-            self.chain.forEach(async(block) => {
-                 if(block.height === 0){
-                       await  block.validate() ? true : errorLog.push("Genesis block does not validate")
-                     // errorLog.push("Genesis block does not validate")
-
+            self.chain.forEach(async block => {
+                console.log(block);
+                const isInvalidBlock = await block.validate();
+                if(!isInvalidBlock) {
+                    errorLog.push({error: "Block validation failed"});
+                };
+                if(block.height >= 0) {
+                    if(block.previousBlockHash.hash != self.chain[block.height - 1].hash) {
+                    errorLog.push({error: "Previous block hash does not match"});
                     }
-                     else if( block.previousBlockHash === self.chain[block.height - 1].hash){
-                      await  block.validate() ? true : errorLog.push(new Error(block + " isn't validated")); 
-                 } 
-           
-             });
+                }
+            })
             resolve(errorLog);
+            reject('error');
         });
     }
 }

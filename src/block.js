@@ -43,7 +43,7 @@ class Block {
             // Save in auxiliary variable the current block hash
             self.hash = "";
             // Recalculate the hash of the Block
-            let recalculatedHash = SHA256(JSON.stringify(self)).toString();
+            let recalculatedHash = SHA256(JSON.stringify(self.hash)).toString();
              self.hash = auxVar;
             // Comparing if the hashes changed
             if (recalculatedHash === auxVar) {
@@ -70,21 +70,18 @@ class Block {
         let self = this;
         // Getting the encoded data saved in the Block
         return new Promise((resolve, reject) => {
-            if (self.height == 0) {
+            let encodedData = self.body;
+            if (self.height === 0) {
                 reject('Empty Genesis Block')
             }
-            let decodeData = JSON.parse(hex2ascii(self.body));
+            // Decoding the data to retrieve the JSON representation of the object
+            // Parse the data to an object to be retrieve.
+            let decodeData = JSON.parse(hex2ascii(encodedData));
+            // Resolve with the data if the object isn't the Genesis block
             resolve(decodeData);
         })
-         // Decoding the data to retrieve the JSON representation of the object
-        
-         
-        // Parse the data to an object to be retrieve.
-            
-        // Resolve with the data if the object isn't the Genesis block
-          
-        }   
-    }
+    }   
+ }
 
 
 module.exports.Block = Block;                    // Exposing the Block class as a module

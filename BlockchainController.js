@@ -17,6 +17,7 @@
         this.submitStar();
         this.getBlockByHash();
         this.getStarsByOwner();
+        this.validateChain()
     }
 
     // Enpoint to Get a Block by Height (GET Endpoint)
@@ -118,21 +119,16 @@
         });
     }
     
+    // This endpoint allows you to trigger a chain validation
     validateChain() {
-        let self = this;
-        let errorLog = [];
-        return new Promise(async (resolve, reject) => {
-            let blockChain=self.chain;
-            for (const block in blockChain) {
-                console.log(blockChain)
-                if(block.validate===false){
-                    console.log("Data didn't get validated");
-                }else if(block.previousBlockHash =this.chain[this.chain.length-1].hash){
-                    console.log("error with previous blockhash");
-                    errorLog.push(`Invalid check previousBlockHash: ${this.chain[this.chain.length-1] }`)
-                    console.log(errorLog)
-                }
-              }
+        this.app.post("/validateChain", async (req, res) => {
+            const message = await this.blockchain.validateChain();
+            console.log(message);    
+            if(message.length == 0){
+                return res.status(200).json("[Chain Validation Result]: All blocks are valid");
+            } else {
+                return res.status(500).send("[Chain Validation Result]: Invalid blocks");
+            }
         });
     }
 
